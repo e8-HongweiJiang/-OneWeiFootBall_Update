@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>足球动画</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+        }
+        
+        #container {
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+        }
+        
+        #football {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            bottom: 5px;
+            left: 0;
+            transition: left 0.5s ease-out, transform 0.5s ease-out;
+        }
+        
+        #playerName {
+            position: absolute;
+            bottom: 50px;
+            left: 10px;
+            color: #cccccc;
+            font-size: 16px;
+            font-weight: bold;
+            transition: left 0.5s ease-out;
+        }
+        
+        .event-container {
+            position: absolute;
+            bottom: 55px;
+            left: 0;
+            display: flex;
+            align-items: center;
+            transform: translateX(-50%);
+            transition: left 0.5s ease-out;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 8px;
+            white-space: nowrap;
+            max-width: 90vw;
+            gap: 10px;
+        }
+        
+        .event-icon {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+        
+        .event-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 2px;
+            flex-shrink: 1;
+            min-width: 0;
+        }
+        
+        .event-team {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        
+        .event-text {
+            color: #cccccc;
+            font-size: 12px;
+            font-weight: normal;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
+        }
+        
+        .event-time {
+            color: #87CEEB;
+            font-size: 14px;
+            font-weight: bold;
+            flex-shrink: 0;
+            align-self: center;
+        }
+        
+        .goal {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            bottom: 0;
+        }
+        
+        #leftGoal {
+            left: 0;
+        }
+        
+        #rightGoal {
+            right: 0;
+            transform: scaleX(-1);
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 8px;
+            height: 3px;
+            border-radius: 1px;
+        }
+        
+        /* 比赛信息面板 */
+        .match-info {
+            position: absolute;
+            bottom: 15px;
+            left: 20%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+            font-size: 13px;
+            white-space: nowrap;
+            transition: opacity 0.2s ease-in-out;
+        }
+        
+        .team-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        .team-logo {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+        }
+        
+        .team-name {
+            font-weight: bold;
+            font-size: 11px;
+            color: #4A90E2;
+        }
+        
+        .score-section {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .score {
+            font-size: 22px;
+            font-weight: bold;
+            color: #87CEEB;
+            margin: 0 5px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        
+        .stat-item span {
+            color: #87CEEB;
+            font-weight: bold;
+        }
+        
+        .stat-icon {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .match-time {
+            position: absolute;
+            bottom: 15px;
+            left: 75%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #87CEEB;
+            transition: opacity 0.2s ease-in-out;
+        }
+        
+        .league-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #87CEEB;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <!-- 左侧球门 -->
+        <img id="leftGoal" class="goal" src="./Image/ball_door.png" alt="左侧球门">
+        
+        <!-- 右侧球门 -->
+        <img id="rightGoal" class="goal" src="./Image/ball_door.png" alt="右侧球门">
+        
+        <!-- 足球 -->
+        <img id="football" src="./Image/fifa26_2.png" alt="足球">
+        
+        <!-- 比赛事件容器 -->
+        <div id="eventContainer" class="event-container">
+            <img id="eventIcon" class="event-icon" src="./Image/default.png" alt="事件图标">
+            <div class="event-content">
+                <span id="eventTeam" class="event-team"></span>
+                <span id="eventText" class="event-text">未开赛</span>
+            </div>
+            <span id="eventTime" class="event-time"></span>
+        </div>
+        
+        <!-- 比赛信息面板 -->
+        <div id="matchInfo" class="match-info">
+            <!-- 主队 -->
+            <div class="team-section">
+                <span class="team-name" id="homeTeamName">主队</span>
+                <div class="stats">
+                    <div class="stat-item">
+                        <img class="stat-icon" src="./Image/cornerflag.png" alt="角球">
+                        <span id="homeCorners">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <img class="stat-icon" src="./Image/yellowcard.png" alt="黄牌">
+                        <span id="homeYellowCards">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <img class="stat-icon" src="./Image/redcard.png" alt="红牌">
+                        <span id="homeRedCards">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 比分区域 -->
+            <div class="score-section">
+                <img class="team-logo" id="homeTeamLogo" src="./Image/default.png" alt="主队队徽">
+                <span class="score" id="homeScore">0</span>
+                <span style="color: #888; font-size: 12px;">VS</span>
+                <span class="score" id="awayScore">0</span>
+                <img class="team-logo" id="awayTeamLogo" src="./Image/default.png" alt="客队队徽">
+            </div>
+            
+            <!-- 客队 -->
+            <div class="team-section">
+                <span class="team-name" id="awayTeamName">客队</span>
+                <div class="stats">
+                    <div class="stat-item">
+                        <img class="stat-icon" src="./Image/cornerflag.png" alt="角球">
+                        <span id="awayCorners">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <img class="stat-icon" src="./Image/yellowcard.png" alt="黄牌">
+                        <span id="awayYellowCards">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <img class="stat-icon" src="./Image/redcard.png" alt="红牌">
+                        <span id="awayRedCards">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 比赛时间 -->
+        <div class="match-time" id="matchTime">
+            <span class="league-name" id="leagueName"></span>
+            <span id="timeText">00:00</span>
+        </div>
+    </div>
+    
+    <script>
+        // API数据变量存储
+        var apiData = {
+            matchHighSpeed: null,      // 比分信息和球队信息
+            scorePanel: null,          // 比分面板
+            preMatchData: null,        // 赛前数据
+            matchInfo: null,           // 比赛信息
+            animateEvent: null,        // 动画事件信息
+            matchEvent: null,          // 比赛事件
+            matchLineup: null,         // 球队阵容
+            teamStatics: null,         // 球员统计数据
+            matchTimeStatus: null,     // 比赛时间状态
+            dqdMatchData: null         // dqd比赛数据
+        };
+        
+        // 获取元素
+        const container = document.getElementById('container');
+        const football = document.getElementById('football');
+        const eventContainer = document.getElementById('eventContainer');
+        const eventText = document.getElementById('eventText');
+        const eventTeam = document.getElementById('eventTeam');
+        const eventIcon = document.getElementById('eventIcon');
+        const eventTime = document.getElementById('eventTime');
+        const matchInfo = document.getElementById('matchInfo');
+        const homeTeamLogo = document.getElementById('homeTeamLogo');
+        const homeTeamName = document.getElementById('homeTeamName');
+        const awayTeamName = document.getElementById('awayTeamName');
+        const awayTeamLogo = document.getElementById('awayTeamLogo');
+        const homeScore = document.getElementById('homeScore');
+        const awayScore = document.getElementById('awayScore');
+        const homeCorners = document.getElementById('homeCorners');
+        const awayCorners = document.getElementById('awayCorners');
+        const homeYellowCards = document.getElementById('homeYellowCards');
+        const awayYellowCards = document.getElementById('awayYellowCards');
+        const homeRedCards = document.getElementById('homeRedCards');
+        const awayRedCards = document.getElementById('awayRedCards');
+        const matchTime = document.getElementById('matchTime');
+        const timeText = document.getElementById('timeText');
+        const leagueName = document.getElementById('leagueName');
+        
+        // 屏幕尺寸
+        let screenWidth = window.innerWidth;
+        let screenHeight = window.innerHeight;
+        
+        // 足球属性
+        const footballWidth = 50;
+        const footballHeight = 50;
+        let footballLeft = 0;
+        let rotation = 0;
+        
+        // 调整尺寸
+        function resize() {
+            screenWidth = window.innerWidth;
+            screenHeight = window.innerHeight;
+        }
+        
+        // 初始化球的位置到中间
+        function initPosition() {
+            screenWidth = window.innerWidth;
+            screenHeight = window.innerHeight;
+            footballLeft = (screenWidth - footballWidth) / 2;
+            football.style.left = footballLeft + 'px';
+            // 事件容器居中于足球上方
+            eventContainer.style.left = (footballLeft + footballWidth / 2) + 'px';
+        }
+        
+        // 移动球到指定位置（只改变X轴）
+        function moveTo(targetX) {
+            try {
+                // 将0-1的输入值映射到实际屏幕位置
+                // 0 = 最左边, 0.5 = 中间, 1 = 最右边
+                targetX = Math.max(0, Math.min(targetX, 1));
+                
+                // 计算实际像素位置：将0-1映射到0到(screenWidth - footballWidth)
+                const actualX = targetX * (screenWidth - footballWidth);
+                
+                // 如果当前图片不是fifa26_2.png，先切换回fifa26_2.png
+                if (!football.src.includes('fifa26_2.png')) {
+                    football.src = './Image/fifa26_2.png';
+                    rotation = 0;
+                    // 临时移除过渡效果，立即重置角度
+                    football.style.transition = 'none';
+                    football.style.transform = `rotate(${rotation}deg)`;
+                    // 强制重绘后恢复过渡效果，然后执行移动
+                    setTimeout(() => {
+                        football.style.transition = 'left 0.5s ease-out, transform 0.5s ease-out';
+                        // 在恢复过渡效果后执行移动
+                        performMove(actualX);
+                    }, 10);
+                } else {
+                    // 如果已经是fifa26_2.png，直接执行移动
+                    performMove(actualX);
+                }
+            } catch (error) {
+                console.error('moveTo error:', error);
+            }
+        }
+        
+        // 执行实际的移动操作
+        function performMove(targetX) {
+            try {
+                // 计算旋转角度（根据移动距离）
+                const distance = targetX - footballLeft;
+                rotation += distance / 2; // 每移动2px旋转1度，加快旋转速度
+                
+                // 更新足球位置
+                footballLeft = targetX;
+                football.style.left = footballLeft + 'px';
+                football.style.transform = `rotate(${rotation}deg)`;
+                
+                // 更新事件容器位置，根据足球位置调整对齐方式
+                const eventContainerWidth = eventContainer.offsetWidth || 100; // 估算宽度
+                const containerCenter = footballLeft + footballWidth / 2;
+                
+                // 检查是否会超出左边界
+                if (containerCenter - eventContainerWidth / 2 < 0) {
+                    // 左边缘，左对齐
+                    eventContainer.style.left = footballLeft + 'px';
+                    eventContainer.style.transform = 'translateX(0)';
+                } 
+                // 检查是否会超出右边界
+                else if (containerCenter + eventContainerWidth / 2 > screenWidth) {
+                    // 右边缘，右对齐
+                    eventContainer.style.left = (footballLeft + footballWidth) + 'px';
+                    eventContainer.style.transform = 'translateX(-100%)';
+                } 
+                else {
+                    // 中间区域，居中对齐
+                    eventContainer.style.left = containerCenter + 'px';
+                    eventContainer.style.transform = 'translateX(-50%)';
+                }
+            } catch (error) {
+                console.error('performMove error:', error);
+            }
+        }
+        
+        // 改变球的图片
+        function changeBallImage(imageName) {
+            football.src = './Image/' + imageName;
+            rotation = 0;
+            // 临时移除过渡效果，立即重置角度
+            football.style.transition = 'none';
+            football.style.transform = `rotate(${rotation}deg)`;
+            // 强制重绘后恢复过渡效果
+            setTimeout(() => {
+                football.style.transition = 'left 0.5s ease-out, transform 0.5s ease-out';
+            }, 10);
+        }
+        
+        // 变更比赛事件名称
+        function changeEventName(teamName, eventName, time) {
+            if (teamName) {
+                eventTeam.textContent = teamName;
+                
+                // 根据队伍名称更新事件图标为队徽
+                const homeName = homeTeamName.textContent;
+                const awayName = awayTeamName.textContent;
+                
+                if (teamName === homeName) {
+                    // 主队事件，使用主队队徽
+                    eventIcon.src = homeTeamLogo.src;
+                } else if (teamName === awayName) {
+                    // 客队事件，使用客队队徽
+                    eventIcon.src = awayTeamLogo.src;
+                }
+            }
+            if (eventName) {
+                eventText.textContent = eventName;
+            }
+            // 时间赋值（没有的话设为空）
+            eventTime.textContent = time || '';
+        }
+        
+        // 更改事件图标
+        function changeEventIcon(iconName) {
+            eventIcon.src = './Image/' + iconName;
+        }
+        
+        // 更新比赛信息
+        function updateMatchInfo(info) {
+            if (info.homeTeamName) homeTeamName.textContent = info.homeTeamName;
+            if (info.awayTeamName) awayTeamName.textContent = info.awayTeamName;
+            if (info.homeTeamLogo) homeTeamLogo.src = info.homeTeamLogo;
+            if (info.awayTeamLogo) awayTeamLogo.src = info.awayTeamLogo;
+            if (info.homeScore !== undefined) homeScore.textContent = info.homeScore;
+            if (info.awayScore !== undefined) awayScore.textContent = info.awayScore;
+            if (info.homeCorners !== undefined) homeCorners.textContent = info.homeCorners;
+            if (info.awayCorners !== undefined) awayCorners.textContent = info.awayCorners;
+            if (info.homeYellowCards !== undefined) homeYellowCards.textContent = info.homeYellowCards;
+            if (info.awayYellowCards !== undefined) awayYellowCards.textContent = info.awayYellowCards;
+            if (info.homeRedCards !== undefined) homeRedCards.textContent = info.homeRedCards;
+            if (info.awayRedCards !== undefined) awayRedCards.textContent = info.awayRedCards;
+            if (info.matchTime) timeText.textContent = info.matchTime;
+            if (info.leagueName) leagueName.textContent = info.leagueName;
+        }
+        
+        // 调整尺寸
+        window.addEventListener('resize', resize);
+        
+        // 页面加载完成后初始化位置
+        window.addEventListener('load', initPosition);
+        
+        // 轮播动画：比赛信息面板和比赛时间互换位置（隐藏-移动-显示）
+        let isSwapped = false;
+        const matchInfoElement = document.getElementById('matchInfo');
+        const matchTimeElement = document.getElementById('matchTime');
+        
+        function swapPositions() {
+            // 第一步：隐藏两个元素
+            matchInfoElement.style.opacity = '0';
+            matchTimeElement.style.opacity = '0';
+            
+            // 第二步：等待淡出完成后，快速移动位置
+            setTimeout(() => {
+                if (isSwapped) {
+                    // 恢复到原始位置
+                    matchInfoElement.style.left = '20%';
+                    matchTimeElement.style.left = '75%';
+                } else {
+                    // 交换位置
+                    matchInfoElement.style.left = '75%';
+                    matchTimeElement.style.left = '20%';
+                }
+                isSwapped = !isSwapped;
+                
+                // 第三步：立即显示元素
+                matchInfoElement.style.opacity = '1';
+                matchTimeElement.style.opacity = '1';
+            }, 200); // 等待0.2秒淡出完成
+        }
+        
+        // 每8秒执行一次位置交换
+        setInterval(swapPositions, 8000);
+        
+        // 更新API数据的函数
+        function updateApiData(apiName, data) {
+            if (apiData.hasOwnProperty(apiName)) {
+                apiData[apiName] = data;
+                console.log(`API数据已更新: ${apiName}`, data);
+                
+                // 特殊处理matchTimeStatus - 更新到timeText
+                if (apiName === 'matchTimeStatus' && data) {
+                    timeText.textContent = data;
+                }
+                
+                // 特殊处理matchInfo - 更新比赛信息
+                if (apiName === 'matchInfo' && data) {
+                    processMatchInfo(data);
+                }
+                
+                // 特殊处理animateEvent
+                if (apiName === 'animateEvent' && data && data.data && data.data.length > 0) {
+                    processAnimateEvent(data);
+                }
+                
+                // 特殊处理dqdMatchData - 更新dqd比赛数据
+                if (apiName === 'dqdMatchData' && data) {
+                    processDqdMatchData(data);
+                }
+            } else {
+                console.warn(`未知的API类型: ${apiName}`);
+            }
+        }
+        
+        // 处理比赛信息数据
+        function processMatchInfo(matchData) {
+            try {
+                // 更新联赛名称
+                if (matchData.league && matchData.league.name_cn) {
+                    leagueName.textContent = matchData.league.name_cn;
+                }
+                
+                // 更新主队信息
+                if (matchData.left_team) {
+                    homeTeamName.textContent = matchData.left_team.name;
+                    if (matchData.left_team.logo_url) {
+                        homeTeamLogo.src = 'https://duihui.duoduocdn.com/' + matchData.left_team.logo_url;
+                    }
+                } else if (matchData.home_team) {
+                    homeTeamName.textContent = matchData.home_team;
+                }
+                
+                // 更新客队信息
+                if (matchData.right_team) {
+                    awayTeamName.textContent = matchData.right_team.name;
+                    if (matchData.right_team.logo_url) {
+                        awayTeamLogo.src = 'https://duihui.duoduocdn.com/' + matchData.right_team.logo_url;
+                    }
+                } else if (matchData.visit_team) {
+                    awayTeamName.textContent = matchData.visit_team;
+                }
+                
+                console.log('比赛信息已更新');
+            } catch (error) {
+                console.error('处理matchInfo失败:', error);
+            }
+        }
+        
+        // 处理动画事件数据
+        function processAnimateEvent(animateData) {
+            try {
+                const eventData = animateData.data[0];
+                if (!eventData) return;
+                
+                // 1. 更新比分和红黄牌
+                if (eventData.left) {
+                    homeScore.textContent = eventData.left.score || 0;
+                    homeYellowCards.textContent = eventData.left.yellow_card || 0;
+                    homeRedCards.textContent = eventData.left.red_card || 0;
+                    homeCorners.textContent = eventData.left.corner || 0;
+                }
+                
+                if (eventData.right) {
+                    awayScore.textContent = eventData.right.score || 0;
+                    awayYellowCards.textContent = eventData.right.yellow_card || 0;
+                    awayRedCards.textContent = eventData.right.red_card || 0;
+                    awayCorners.textContent = eventData.right.corner || 0;
+                }
+                
+                // 2. 处理事件
+                if (eventData.event && eventData.event.length > 0) {
+                    const event = eventData.event[0];
+                    const teamName = eventData.team || '';
+                    const eventName = event.ext || '';
+                    const time = event.time || '';
+                    
+                    // 调用changeEventName更新事件名称
+                    if (teamName || eventName) {
+                        changeEventName(teamName, eventName, time);
+                    }
+                    console.log(event.coord_x);
+                    // 3. 如果coord_x不为空，调用moveTo；否则使用normalizedCoordX
+                    let coordX = null;
+                    if (event.coord_x !== undefined && event.coord_x !== null && event.coord_x !== '') {
+                        coordX = parseFloat(event.coord_x);
+                    } else if (animateData.normalizedCoordX !== undefined && animateData.normalizedCoordX !== null) {
+                        // 当coord_x为空时，使用normalizedCoordX
+                        coordX = parseFloat(animateData.normalizedCoordX);
+                        console.log('使用normalizedCoordX:', coordX);
+                    }
+                    
+                    if (coordX !== null && !isNaN(coordX)) {
+                        moveTo(coordX);
+                    }
+                }
+            } catch (error) {
+                console.error('处理animateEvent失败:', error);
+            }
+        }
+        
+        // 处理dqd比赛数据
+        function processDqdMatchData(dqdData) {
+            try {
+                // 更新主队信息
+                if (dqdData.homeTeamName) {
+                    homeTeamName.textContent = dqdData.homeTeamName;
+                }
+                if (dqdData.homeTeamLogo) {
+                    homeTeamLogo.src = dqdData.homeTeamLogo;
+                }
+                
+                // 更新客队信息
+                if (dqdData.awayTeamName) {
+                    awayTeamName.textContent = dqdData.awayTeamName;
+                }
+                if (dqdData.awayTeamLogo) {
+                    awayTeamLogo.src = dqdData.awayTeamLogo;
+                }
+                
+                // 更新比分
+                if (dqdData.homeScore !== undefined) {
+                    homeScore.textContent = dqdData.homeScore;
+                }
+                if (dqdData.awayScore !== undefined) {
+                    awayScore.textContent = dqdData.awayScore;
+                }
+                
+                // 更新统计数据
+                if (dqdData.homeCorners !== undefined) {
+                    homeCorners.textContent = dqdData.homeCorners;
+                }
+                if (dqdData.awayCorners !== undefined) {
+                    awayCorners.textContent = dqdData.awayCorners;
+                }
+                if (dqdData.homeYellowCards !== undefined) {
+                    homeYellowCards.textContent = dqdData.homeYellowCards;
+                }
+                if (dqdData.awayYellowCards !== undefined) {
+                    awayYellowCards.textContent = dqdData.awayYellowCards;
+                }
+                if (dqdData.homeRedCards !== undefined) {
+                    homeRedCards.textContent = dqdData.homeRedCards;
+                }
+                if (dqdData.awayRedCards !== undefined) {
+                    awayRedCards.textContent = dqdData.awayRedCards;
+                }
+                
+                // 更新比赛时间和状态
+                if (dqdData.matchTime) {
+                    timeText.textContent = dqdData.matchTime;
+                } else if (dqdData.matchStatus) {
+                    // 如果比赛时间不存在，使用比赛状态
+                    timeText.textContent = dqdData.matchStatus;
+                }
+                
+                // 更新足球位置（如果提供了归一化的X坐标）
+                if (dqdData.footballCoordX !== undefined && dqdData.footballCoordX !== null) {
+                    const coordX = parseFloat(dqdData.footballCoordX);
+                    if (!isNaN(coordX)) {
+                        moveTo(coordX);
+                    }
+                }
+                
+                // 更新事件信息
+                if (dqdData.eventType || dqdData.eventPlayer || dqdData.eventTeam) {
+                    const teamName = dqdData.eventTeam || '';
+                    const eventName = dqdData.eventPlayer ? `${dqdData.eventPlayer} ${dqdData.eventType || ''}` : (dqdData.eventType || '');
+                    const time = dqdData.eventTime || '';
+                    
+                    if (teamName || eventName) {
+                        changeEventName(teamName, eventName, time);
+                    }
+                    
+                    // 如果有球员头像，可以更新事件图标
+                    if (dqdData.playerAvatar) {
+                        eventIcon.src = dqdData.playerAvatar;
+                    }
+                }
+                
+                console.log('dqd比赛数据已更新');
+            } catch (error) {
+                console.error('处理dqdMatchData失败:', error);
+            }
+        }
+        
+        // 监听来自主窗口的消息
+        window.addEventListener('message', function(event) {
+            try {
+                const message = event.data;
+                if (message && message.type === 'updateApiData') {
+                    updateApiData(message.apiName, message.data);
+                }
+            } catch (error) {
+                console.error('处理消息失败:', error);
+            }
+        });
+    </script>
+</body>
+</html>
